@@ -14,8 +14,9 @@
  * TO DO: Cargar los modulos necesarios
  *******************/
 
-import * as THREE from '../lib/three.module.js';
-import { GLTFLoader } from '../lib/GLTFLoader.js';
+import * as THREE from '/lib/three.module.js';
+import { GLTFLoader } from '/lib/GLTFLoader.js';
+
 
 
 
