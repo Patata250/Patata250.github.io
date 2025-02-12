@@ -103,7 +103,7 @@ function loadScene()
     *******************/
 
     const loader = new GLTFLoader();
-    loader.load('models/spongebob_boat/scene.glb', function (gltf) {
+    loader.load('models/spongebob_boat/scene.gltf', function (gltf) {
         modeloImportado = gltf.scene;
         modeloImportado.position.set(0, 0, 0);
         scene.add(modeloImportado);
