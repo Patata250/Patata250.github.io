@@ -66,7 +66,7 @@ function loadScene()
     *******************/
 
     const sueloGeo = new THREE.PlaneGeometry(10, 10);
-    const sueloMat = new THREE.MeshBasicMaterial({ color: 0x888888, side: THREE.DoubleSide });
+    const sueloMat = new THREE.MeshNormalMaterial({ color: 0x888885, side: THREE.DoubleSide });
     suelo = new THREE.Mesh(sueloGeo, sueloMat);
     suelo.rotation.x = -Math.PI / 2; // Rotar para que quede en el plano XZ
     scene.add(suelo);
@@ -81,7 +81,7 @@ function loadScene()
         new THREE.BoxGeometry(1, 1, 1),       // Cubo
         new THREE.SphereGeometry(0.5, 32, 32), // Esfera
         new THREE.ConeGeometry(0.5, 1, 32),   // Cono
-        new THREE.CylinderGeometry(0.5, 1, 32), // Cilindro
+        new THREE.CapsuleGeometry(0.2, 0.3, 32), // Cilindro
         new THREE.TorusGeometry(0.4, 0.15, 16, 100) // Toro
     ];
     
@@ -102,14 +102,40 @@ function loadScene()
     * TO DO: Añadir a la escena un modelo importado en el centro del pentagono
     *******************/
 
-    const loader = new GLTFLoader();
-    loader.load('models/spongebob_boat/scene.gltf', function (gltf) {
-        modeloImportado = gltf.scene;
-        modeloImportado.position.set(0, 0, 0);
-        scene.add(modeloImportado);
-    }, undefined, function (error) {
-        console.error('Error al cargar el modelo:', error);
-    });
+    /*// Importar un modelo en json
+    const loader = new THREE.ObjectLoader();
+
+    loader.load( 'models/soldado/soldado.json', 
+        function(objeto){
+            scene.add(objeto);
+            objeto.position.y = 0;
+        }
+    )*/
+
+    // Importar un modelo en gltf
+    const glloader = new GLTFLoader();
+
+    //glloader.load( 'models/RobotExpressive.glb', function ( gltf ) {
+    glloader.load( 'models/spongebob_boat/scene.gltf', function ( gltf ) {
+        gltf.scene.position.y = 0;
+        gltf.scene.rotation.y = -Math.PI/2;
+        gltf.scene.scale.set(0.1, 0.1, 0.1); // Reducir el tamaño si es muy grande
+        
+        //camera.position.set(1, 5, 10); // Alejar la cámara si es necesario
+        const box = new THREE.Box3().setFromObject(gltf.scene);
+        const center = box.getCenter(new THREE.Vector3());
+        gltf.scene.position.set(-center.x, -center.y+0.4, -center.z);
+
+
+        scene.add( gltf.scene );
+        console.log("ROBOT");
+        console.log(gltf);
+    
+    }, undefined, function ( error ) {
+    
+        console.error( error );
+    
+    } );
 
 
     /*******************
@@ -120,22 +146,21 @@ function loadScene()
     scene.add(ejes);
 }
 
-function update()
-{
-    /*******************
-    * TO DO: Modificar el angulo de giro de cada objeto sobre si mismo
-    * y del conjunto pentagonal sobre el objeto importado
-    *******************/
 
-    function update() {
-        figuras.forEach(figura => {
-            figura.rotation.y += 0.02; // Rotación individual
-        });
-    
-        grupoPentagono.rotation.y += 0.01; // Rotación del conjunto
-    }
-    
+/*******************
+* TO DO: Modificar el angulo de giro de cada objeto sobre si mismo
+* y del conjunto pentagonal sobre el objeto importado
+*******************/
+
+function update() {
+    figuras.forEach(figura => {
+        figura.rotation.y += 0.02; // Rotación individual
+    });
+
+    grupoPentagono.rotation.y += 0.01; // Rotación del conjunto
 }
+    
+
 
 function render()
 {
