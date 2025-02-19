@@ -25,6 +25,8 @@ let renderer, scene, camera;
 let cameraControls, effectController;
 let esferaCubo,cubo,esfera,suelo;
 let video;
+let angulo = 0;
+let grupoPentagono, figuras = [];
 
 // Otras globales
 /*******************
@@ -121,22 +123,18 @@ function loadScene()
      * - Uno basado en Basic
      *******************/
 
+    
+
     const path ="./images/";
-    const texcubo = new THREE.TextureLoader().load(path+"wood512.jpg");
     const texsuelo = new THREE.TextureLoader().load(path+"wood512.jpg");
     texsuelo.repeat.set(1,1);
     texsuelo.wrapS= texsuelo.wrapT = THREE.MirroredRepeatWrapping;
-    const entorno = [ path+"Forest_Room/posx.jpg", path+"Forest_Room/negx.jpg",
-                        path+"Forest_Room/posy.jpg", path+"Forest_Room/negy.jpg",
-                        path+"Forest_Room/posz.jpg", path+"Forest_Room/negz.jpg"];
-    const texesfera = new THREE.CubeTextureLoader().load(entorno);
 
-    const matcubo = new THREE.MeshLambertMaterial({color:'yellow',map:texcubo});
-    const matesfera = new THREE.MeshPhongMaterial({color:'white',
-                                                    specular:'gray',
-                                                    shininess: 30,
-                                                    envMap: texesfera });
-    const matsuelo = new THREE.MeshStandardMaterial({color:"rgb(150,150,150)",map:texvideo});
+
+
+    const matsuelo = new THREE.MeshBasicMaterial({color:"rgb(150,150,150)",map:texvideo});
+
+
     
     // Suelo
     suelo = new THREE.Mesh( new THREE.PlaneGeometry(16,9, 100,100), matsuelo );
@@ -145,64 +143,82 @@ function loadScene()
     suelo.receiveShadow = true;
     scene.add(suelo);
 
+    const entorno = [ path+"Forest_Room/posx.jpg", path+"Forest_Room/negx.jpg",
+                        path+"Forest_Room/posy.jpg", path+"Forest_Room/negy.jpg",
+                        path+"Forest_Room/posz.jpg", path+"Forest_Room/negz.jpg"];
+
+    const texFigura = new THREE.CubeTextureLoader().load(entorno);
+
+    const material = new THREE.MeshPhongMaterial( {wireframe:false, 
+        color:'white',
+        specular:'gray',
+        shininess: 30,
+        envMap: texFigura } );
+
+    const materialTorus = new THREE.MeshLambertMaterial( {wireframe:false,
+        color:'white',
+        envMap: texFigura } );
+
     /*******************
     * TO DO: Misma escena que en la practica anterior
     * cambiando los materiales y activando las sombras
     *******************/
 
-    // Esfera y cubo
-        esfera = new THREE.Mesh( new THREE.SphereGeometry(1,20,20), matesfera );
-        cubo = new THREE.Mesh( new THREE.BoxGeometry(2,2,2), matcubo );
-        esfera.position.x = 1;
-        cubo.position.x = -1;
-        esfera.castShadow = true;
-        esfera.receiveShadow = true;
-        cubo.castShadow = cubo.receiveShadow = true;
+    const geometries = [
+        new THREE.BoxGeometry(1, 1, 1),       // Cubo
+        new THREE.SphereGeometry(0.5, 32, 32), // Esfera
+        new THREE.ConeGeometry(0.5, 1, 32),   // Cono
+        new THREE.CapsuleGeometry(0.2, 0.3, 32), // Cilindro
+        new THREE.TorusGeometry(0.4, 0.15, 16, 100) // Toro
+    ];
     
-        esferaCubo = new THREE.Object3D();
-        esferaCubo.add(esfera);
-        esferaCubo.add(cubo);
-        esferaCubo.position.y = 1;
+    grupoPentagono = new THREE.Group(); // Agrupamos las figuras
     
-        scene.add(esferaCubo);
+    for (let i = 0; i < 4; i++) {
+        const angle = (i * 2 * Math.PI) / 5;
+        const figura = new THREE.Mesh(geometries[i], material);
+        figura.position.set(Math.cos(angle) * 2, 0.5, Math.sin(angle) * 2);
+        figura.castShadow = true;
+        figura.receiveShadow = true;
+        grupoPentagono.add(figura);
+        figuras.push(figura);
+    }
     
-        scene.add( new THREE.AxesHelper(3) );
-        cubo.add( new THREE.AxesHelper(1) );
+    //Toroide con otro material
+    const angle = (4 * 2 * Math.PI) / 5;
+    const figura = new THREE.Mesh(geometries[4], materialTorus);
+    figura.position.set(Math.cos(angle) * 2, 0.5, Math.sin(angle) * 2);
+    figura.castShadow = true;
+    figura.receiveShadow = true;
+    grupoPentagono.add(figura);
+    figuras.push(figura);
+        
+    scene.add(grupoPentagono);
 
-    // Modelos importados
-        const loader = new THREE.ObjectLoader();
-        loader.load('models/soldado/soldado.json', 
-        function (objeto)
-        {
-            const soldado = new THREE.Object3D();
-            soldado.add(objeto);
-            cubo.add(soldado);
-            soldado.position.y = 1;
-            soldado.name = 'soldado';
-            soldado.traverse(ob=>{
-                if(ob.isObject3D) ob.castShadow = true;
-            });
-            objeto.material.setValues( {map:
-             new THREE.TextureLoader().load("models/soldado/soldado.png")} );
-        });
+    // Importar un modelo en gltf
+    const glloader = new GLTFLoader();
+
+    //glloader.load( 'models/RobotExpressive.glb', function ( gltf ) {
+    glloader.load( 'models/spongebob_boat/scene.gltf', function ( gltf ) {
+        gltf.scene.position.y = 0;
+        gltf.scene.rotation.y = -Math.PI/2;
+        gltf.scene.scale.set(0.1, 0.1, 0.1); // Reducir el tamaño si es muy grande
+        
+        //camera.position.set(1, 5, 10); // Alejar la cámara si es necesario
+        const box = new THREE.Box3().setFromObject(gltf.scene);
+        const center = box.getCenter(new THREE.Vector3());
+        gltf.scene.position.set(-center.x, -center.y+0.4, -center.z);
+
+
+        scene.add( gltf.scene );
+        console.log("ROBOT");
+        console.log(gltf);
     
-        // Importar un modelo en gltf
-       const glloader = new GLTFLoader();
+    }, undefined, function ( error ) {
     
-       glloader.load( 'models/robota/scene.gltf', function ( gltf ) {
-           gltf.scene.position.y = 1;
-           gltf.scene.rotation.y = -Math.PI/2;
-           gltf.scene.name = 'robota';
-           esfera.add( gltf.scene );
-           gltf.scene.traverse(ob=>{
-            if(ob.isObject3D) ob.castShadow = true;
-        })
-       
-       }, undefined, function ( error ) {
-       
-           console.error( error );
-       
-       } );
+        console.error( error );
+    
+    } );
 
     /******************
      * TO DO: Crear una habitacion de entorno
@@ -240,101 +256,76 @@ function loadGUI()
     *   encadenadas
     * - Slider de control de radio del pentagono
     * - Checkbox para alambrico/solido
-    * - Checkbox de sombras
-    * - Selector de color para cambio de algun material
-    * - Boton de play/pause y checkbox de mute
     *******************/
 
     // Definicion de los controles
-        effectController = {
-            mensaje: 'My cinema',
-            giroY: 0.0,
-            separacion: 0,
-            sombras: true,
-            play: function(){video.play();},
-            pause: function(){video.pause();},
-            mute: true,
-            colorsuelo: "rgb(150,150,150)"
-        };
-    
-        // Creacion interfaz
-        const gui = new GUI();
-    
-        // Construccion del menu
-        const h = gui.addFolder("Control esferaCubo");
-        h.add(effectController, "mensaje").name("Aplicacion");
-        h.add(effectController, "giroY", -180.0, 180.0, 0.025).name("Giro en Y");
-        h.add(effectController, "separacion", { 'Ninguna': 0, 'Media': 2, 'Total': 5 })
-         .name("Separacion")
-         .onChange(s=>{
-            cubo.position.set( -1-s/2, 0, 0 );
-            esfera.position.set( 1+s/2, 0, 0 );
-         });
-        h.add(effectController, "sombras")
-          .onChange(v=>{
-            cubo.castShadow = v;
-            esfera.castShadow = v;
-          });
-        h.addColor(effectController, "colorsuelo")
-         .name("Color moqueta")
-         .onChange(c=>{suelo.material.setValues({color:c})});
-        const videofolder = gui.addFolder("Control video");
-        videofolder.add(effectController,"mute").onChange(v=>{video.muted = v});
-        videofolder.add(effectController,"play");
-        videofolder.add(effectController,"pause");
+    effectController = {
+        mensaje: 'Figuras',
+        giroY: 0.0,
+        colorsuelo: "rgb(150,150,150)",
+        radioPentagono: 2,
+        wireframe: false,
+        animar: function () {
+            animateFigures();
+        }
+    };
+
+    // Creacion interfaz
+    const gui = new GUI();
+
+    // Construccion del menu
+    const h = gui.addFolder("Control Pentagono");
+    h.add(effectController, "mensaje").name("Aplicacion");
+    h.add(effectController, "giroY", -180.0, 180.0, 0.025).name("Giro en Y").onChange(updateRotationY);
+    h.addColor(effectController, "colorsuelo").name("Color suelo").onChange(updateWireframeColor);
+    h.add(effectController, "radioPentagono", 1, 5, 0.1).name("Radio Pentágono").onChange(updatePentagonRadius);
+    h.add(effectController, "wireframe").name("Wireframe").onChange(updateWireframe);
+    h.add(effectController, "animar").name("Animar");
 }
 
-function updateAspectRatio()
-{
-    const ar = window.innerWidth/window.innerHeight;
-    renderer.setSize(window.innerWidth,window.innerHeight);
-    camera.aspect = ar;
-    camera.updateProjectionMatrix();
-}
-
-function animate(event)
-{
-    // Capturar y normalizar
-    let x= event.clientX;
-    let y = event.clientY;
-    x = ( x / window.innerWidth ) * 2 - 1;
-    y = -( y / window.innerHeight ) * 2 + 1;
-
-    // Construir el rayo y detectar la interseccion
-    const rayo = new THREE.Raycaster();
-    rayo.setFromCamera(new THREE.Vector2(x,y), camera);
-    const soldado = scene.getObjectByName('soldado');
-    const robot = scene.getObjectByName('robota');
-    let intersecciones = rayo.intersectObjects(soldado.children,true);
-
-    if( intersecciones.length > 0 ){
-        new TWEEN.Tween( soldado.position ).
-        to( {x:[0,0],y:[3,1],z:[0,0]}, 2000 ).
-        interpolation( TWEEN.Interpolation.Bezier ).
-        easing( TWEEN.Easing.Bounce.Out ).
-        start();
-    }
-
-    intersecciones = rayo.intersectObjects(robot.children,true);
-
-    if( intersecciones.length > 0 ){
-        new TWEEN.Tween( robot.rotation ).
-        to( {x:[0,0],y:[Math.PI,-Math.PI/2],z:[0,0]}, 5000 ).
-        interpolation( TWEEN.Interpolation.Linear ).
-        easing( TWEEN.Easing.Exponential.InOut ).
-        start();
+function updatePentagonRadius() {
+    const radius = effectController.radioPentagono;
+    for (let i = 0; i < 5; i++) {
+        const angle = (i * 2 * Math.PI) / 5;
+        figuras[i].position.set(Math.cos(angle) * radius, 0.5, Math.sin(angle) * radius);
     }
 }
+
+function updateWireframe() {
+    const wireframe = effectController.wireframe;
+    figuras.forEach(figura => {
+        figura.material.wireframe = wireframe;
+    });
+}
+
+function animateFigures() {
+    figuras.forEach((figura, index) => {
+        new TWEEN.Tween(figura.position)
+            .to({ y: [2, 0.5] }, 1000)
+            .interpolation(TWEEN.Interpolation.Bezier)
+            .easing(TWEEN.Easing.Bounce.Out)
+            .delay(index * 200)
+            .start();
+    });
+}
+
+function updateWireframeColor() {
+    const color = new THREE.Color(effectController.colorsuelo);
+    suelo.material.color.set(color);
+}
+
+function updateRotationY() {
+    grupoPentagono.rotation.y = effectController.giroY * Math.PI / 180;
+}
+
+
 
 function update(delta)
 {
     /*******************
     * TO DO: Actualizar tween
     *******************/
-
-    esferaCubo.rotation.y = effectController.giroY * Math.PI/180;
-    
-        TWEEN.update();
+    TWEEN.update();
 }
 
 function render(delta)
