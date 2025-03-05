@@ -1,0 +1,11 @@
+Model Information:
+* title:	Ponyta - Pokemon
+* source:	https://sketchfab.com/3d-models/ponyta-pokemon-e4e73f5a6b174e2d8fa957d7b720c7aa
+* author:	Locur (https://sketchfab.com/Locur)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Ponyta - Pokemon" (https://sketchfab.com/3d-models/ponyta-pokemon-e4e73f5a6b174e2d8fa957d7b720c7aa) by Locur (https://sketchfab.com/Locur) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

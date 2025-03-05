@@ -1,0 +1,11 @@
+Model Information:
+* title:	Pokemon 3DS meowth
+* source:	https://sketchfab.com/3d-models/pokemon-3ds-meowth-e5be0b74d7434221830aa58fa64e8eb8
+* author:	ijackprovostjr (https://sketchfab.com/ijackprovostjr)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Pokemon 3DS meowth" (https://sketchfab.com/3d-models/pokemon-3ds-meowth-e5be0b74d7434221830aa58fa64e8eb8) by ijackprovostjr (https://sketchfab.com/ijackprovostjr) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

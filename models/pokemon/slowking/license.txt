@@ -1,0 +1,11 @@
+Model Information:
+* title:	Slowking
+* source:	https://sketchfab.com/3d-models/slowking-936e43d115414ac6a40d0df80eed6dbe
+* author:	nguyenlouis32 (https://sketchfab.com/nguyenlouis32)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Slowking" (https://sketchfab.com/3d-models/slowking-936e43d115414ac6a40d0df80eed6dbe) by nguyenlouis32 (https://sketchfab.com/nguyenlouis32) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
