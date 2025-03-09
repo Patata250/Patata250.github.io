@@ -143,7 +143,6 @@ function loadScene() {
             piece.castShadow = true;
             piece.receiveShadow = true;
             piece.name = modelPath + cont;
-            piece.add(new THREE.AxesHelper(3));
             pieces.push(piece);
             scene.add(piece);
             cont ++;
@@ -207,11 +206,17 @@ function setupGUI() {
             if (audio && !audio.isPlaying) {
                 audio.play();
             }
-        }
+        },
+        volume:0.5
     };
 
     gui.add(controls, 'pauseMusic').name('Pausar música');
     gui.add(controls, 'playMusic').name('Reproducir música');
+    gui.add(controls, 'volume', 0, 1).name('Volumen').onChange(value => {
+        if (audio) {
+            audio.setVolume(value);
+        }
+    });
 }
 
 function click(event) {
