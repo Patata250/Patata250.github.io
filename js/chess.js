@@ -17,11 +17,15 @@ import {GUI} from "../lib/lil-gui.module.min.js";
 // Variables estandar
 let renderer, scene, camera, mesa;
 let cameraControls, effectController;
-let chessBoard, selectedPiece = null;
+let chessBoard;
 let pieces = [];
 let turn = 'white';
 let whitePieces = 16;
 let blackPieces = 16;
+let selectedObject = undefined; 
+let audio, listener;
+
+
 
 // Acciones
 init();
@@ -42,9 +46,9 @@ function init() {
 
     // Camara
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 10, 20);
-    camera.lookAt(0, 0, 0);
+    camera.position.set(0, 10, 20);  
     cameraControls = new OrbitControls(camera, renderer.domElement);
+    camera.lookAt(0, 0, 0);
 
     // Luces
     const ambientLight = new THREE.AmbientLight(0x404040);
@@ -61,10 +65,30 @@ function init() {
     directionalLight2.castShadow = true;
     scene.add(directionalLight2);
     //scene.add(new THREE.CameraHelper(directionalLight2.shadow.camera));
+
+    window.addEventListener('resize', updateAspectRatio);
+    renderer.domElement.addEventListener('click', click);
 }
+
+
 
 function loadScene() {
     const glloader = new GLTFLoader();
+    let cont = 0;
+
+    //Musica
+    listener = new THREE.AudioListener();
+    scene.add(listener);
+
+    audio = new THREE.Audio(listener);
+    const audioLoader = new THREE.AudioLoader();
+    
+    audioLoader.load('../images/musicapokemon.mp3', function(buffer) {
+        audio.setBuffer(buffer);
+        audio.setLoop(true);
+        audio.setVolume(0.5);
+        audio.play();
+    });
     
     //Mesa
     glloader.load('../models/pokemon/table/scene.gltf', function (gltf) {
@@ -83,9 +107,10 @@ function loadScene() {
     const boardTexture = new THREE.TextureLoader().load('../images/chess2.png'); // Reemplaza con la ruta de la textura del tablero
     const boardMaterial = new THREE.MeshPhongMaterial({ map: boardTexture, side: THREE.DoubleSide });
     const boardGeometry = new THREE.PlaneGeometry(16, 16);
-    chessBoard = new THREE.Mesh(boardGeometry, boardMaterial);
+    chessBoard = new THREE.Mesh(new THREE.BoxGeometry(16, 16, 0.1, 1), boardMaterial);
     chessBoard.rotation.x = -Math.PI / 2;
     chessBoard.receiveShadow = true;
+    chessBoard.position.set(0, -0.15, 0);
     scene.add(chessBoard);
     
     // Cargar modelos 
@@ -117,9 +142,11 @@ function loadScene() {
             piece.rotateY(-rotation);
             piece.castShadow = true;
             piece.receiveShadow = true;
-
+            piece.name = modelPath + cont;
+            piece.add(new THREE.AxesHelper(3));
             pieces.push(piece);
             scene.add(piece);
+            cont ++;
         }, undefined, function (error) {
             console.error(error);
         });
@@ -168,74 +195,108 @@ function loadScene() {
 }
 
 function setupGUI() {
-    // Definicion de los controles
-    effectController = {
-        turno: turn,
-        blancasRestantes: whitePieces,
-        negrasRestantes: blackPieces
+    const gui = new GUI();
+    
+    const controls = {
+        pauseMusic: () => {
+            if (audio && audio.isPlaying) {
+                audio.pause();
+            }
+        },
+        playMusic: () => {
+            if (audio && !audio.isPlaying) {
+                audio.play();
+            }
+        }
     };
 
-    // Creacion interfaz
-    const gui = new GUI();
-
-    // Construccion del menu
-    const h = gui.addFolder("Estado del Juego");
-    h.add(effectController, "turno").name("Turno");
-    h.add(effectController, "blancasRestantes").name("Blancas Restantes");
-    h.add(effectController, "negrasRestantes").name("Negras Restantes");
+    gui.add(controls, 'pauseMusic').name('Pausar música');
+    gui.add(controls, 'playMusic').name('Reproducir música');
 }
 
-function onDocumentMouseDown(event) {
-    event.preventDefault();
+function click(event) {
+    let x = event.clientX;
+    let y = event.clientY;
+    x = ( x / window.innerWidth ) * 2 - 1;
+    y = - ( y / window.innerHeight ) * 2 + 1;
 
-    const mouse = new THREE.Vector2(
-        (event.clientX / window.innerWidth) * 2 - 1,
-        -(event.clientY / window.innerHeight) * 2 + 1
-    );
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(new THREE.Vector2(x, y), camera);
+    const intersects = ray.intersectObjects(pieces, true);
+    const intersectsTablero = ray.intersectObject(chessBoard);
 
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(mouse, camera);
+    if (selectedObject == undefined) {
+        if (intersects.length > 0) {
+            selectedObject = intersects[0].object;
+            while (selectedObject.parent && selectedObject.name.substring(0,17) !== '../models/pokemon') {
+                selectedObject = selectedObject.parent;
+            }  
 
-    // Buscar colisión con piezas y tablero
-    //const intersects = raycaster.intersectObjects(pieces.concat(chessBoard), true);
-    const intersects = raycaster.intersectObjects(pieces, true);
-
-    if (intersects.length > 0) {
-        const intersected = intersects[0].object;
-        const selectedModel = intersected.parent; // Asegura que seleccionas toda la pieza
-
-        if (selectedPiece) {
-            // Si ya hay una pieza seleccionada, moverla al punto clicado en el tablero
-            const newPosition = intersects[0].point;  // Obtener la nueva posición del clic
-            newPosition.y = 0;  // Asegúrate de que la pieza se coloca sobre el tablero (y=0)
-
-            // Animación con TWEEN para mover la pieza
-            new TWEEN.Tween(selectedPiece.position)
-                .to({ x: newPosition.x, y: 0, z: newPosition.z }, 500) // Movimiento suave
-                .easing(TWEEN.Easing.Quadratic.InOut)  // Animación suave
-                .onComplete(() => {
-                    selectedPiece = null; // Restablece la pieza seleccionada
-                    turn = (turn === 'white') ? 'black' : 'white';
-                    effectController.turno = turn;
-                })
-                .start();
+            //selectedObject = selectedObject.parent;
+            const pkm = scene.getObjectByName(selectedObject.name);
+            new TWEEN.Tween(pkm.position)
+            .to({ y: pkm.position.y + 1 }, 1000 )
+            .interpolation(TWEEN.Interpolation.CatmullRom)
+            .easing(TWEEN.Easing.Quadratic.InOut)
+            .start();
         }
-    } else {
-        // Si no hay pieza seleccionada, seleccionar esta pieza
-        if (intersects.length > 0 && pieces.includes(selectedModel)) {
-            selectedPiece = selectedModel;
-            // Animación para levantar la pieza al seleccionarla
-            new TWEEN.Tween(selectedPiece.position)
-                .to({ y: 1 }, 500)  // Eleva la pieza
-                .easing(TWEEN.Easing.Quadratic.InOut)  // Animación suave
+    } 
+    else {
+        let secondObject;
+        if (intersects.length > 0) {
+            secondObject = intersects[0].object;
+            const pkm = scene.getObjectByName(selectedObject.name);
+            while (secondObject.parent && secondObject.name.substring(0,17) !== '../models/pokemon') {
+                secondObject = secondObject.parent;
+            }  
+
+            let newx = secondObject.position.x;
+            let newz = secondObject.position.z;
+
+            new TWEEN.Tween(pkm.position)
+            .to({x:[newx, newx], y:[0.1, 0], z:[newz, newz]}, 1000 )
+            .interpolation(TWEEN.Interpolation.CatmullRom)
+            .easing(TWEEN.Easing.Quadratic.InOut)
+            .start();
+
+            new TWEEN.Tween(secondObject.position)
+            .to({x:[newx, newx], y:[-5, -5], z:[newz,newz]}, 1000 )
+            .interpolation(TWEEN.Interpolation.Bezier)
+            .easing(TWEEN.Easing.Quadratic.InOut)
+            .delay(600)
+            .start();
+
+            selectedObject = undefined;
+
+        } 
+        else {
+            if (intersectsTablero.length > 0) {
+                let point = intersectsTablero[0].point;
+                let newx = point.x;
+                let newz = point.z;
+                
+                const pkm = scene.getObjectByName(selectedObject.name);
+                new TWEEN.Tween(pkm.position)
+                .to({x:[newx, newx], y:[0, 0], z:[newz, newz]}, 1000 )
+                .interpolation(TWEEN.Interpolation.CatmullRom)
+                .easing(TWEEN.Easing.Quadratic.InOut)
                 .start();
+                selectedObject = undefined;
+            }
         }
     }
 }
 
-document.addEventListener('mousedown', onDocumentMouseDown, false);
+
+function updateAspectRatio() {
+    const ar = window.innerWidth/window.innerHeight;
+    renderer.setSize(window.innerWidth,window.innerHeight);
+    camera.aspect = ar;
+    camera.updateProjectionMatrix();
+}
 
 function animate() {
     requestAnimationFrame(animate);
     renderer.render(scene, camera);
+    TWEEN.update();
 }
